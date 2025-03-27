@@ -1,161 +1,107 @@
-# KNN Prediction Service
+# KNN 기반 학생 성적 예측 서비스
 
-## 프로젝트 개요
+이 서비스는 학생의 성적 데이터를 활용하여 K-최근접 이웃(K-Nearest Neighbors, KNN) 알고리즘을 이용해 다음과 같은 예측을 수행합니다.
 
-이 프로젝트는 **K-최근접 이웃(KNN)** 알고리즘을 사용하여 다음 두 가지 예측 서비스를 제공합니다:
+1. **수학 점수를 입력하면 과학 점수를 예측**
+2. **수학, 영어, 과학 점수를 입력하면 합격 여부를 예측**
 
-1. **수학 점수를 입력하면 과학 점수를 예측**합니다.
-2. **수학, 영어, 과학 점수를 입력하면 합격 여부를 예측**합니다.
+## 1. 데이터 전처리
 
-이 프로젝트는 Python과 scikit-learn 라이브러리를 사용하며, 데이터 전처리(결측치 처리 및 이상치 제거)를 포함합니다.
+### 1.1 결측치 처리
 
----
+데이터에서 결측값이 있는 경우 다음과 같은 방식으로 채웁니다:
 
-## 데이터 설명
+- **범주형 데이터 (문자열 데이터)**: 최빈값(mode)으로 채움
+- **수치형 데이터**: 평균(mean)으로 채움
 
-데이터는 `Exam-112.csv` 파일에 저장되어 있으며, 주요 열은 다음과 같습니다:
+### 1.2 이상치 처리 (IQR 방식)
 
-- `math`: 수학 점수
-- `eng`: 영어 점수
-- `science`: 과학 점수
-- `pass`: 합격 여부 (`Pass` 또는 `Fail`)
+이상치는 사분위수 범위를 이용하여 제거합니다:
 
----
+- **1사분위수(Q1)**: 데이터의 하위 25%
+- **3사분위수(Q3)**: 데이터의 상위 75%
+- **IQR (Interquartile Range)**: Q3 - Q1
+- **이상치 기준**:
+  - 최소 허용값: Q1 - 1.5 \* IQR
+  - 최대 허용값: Q3 + 1.5 \* IQR
+- 이상치를 벗어나는 값은 제거함
 
-## 주요 기능
+## 2. 예측 모델
 
-### 1. 수학 점수로 과학 점수를 예측 (KNN 회귀)
+### 2.1 과학 점수 예측 (KNN 회귀)
 
-- **입력:** 수학 점수
-- **출력:** 예측된 과학 점수
-- **모델:** KNeighborsRegressor
+- `math` 점수를 입력하면 `science` 점수를 예측
+- 데이터는 **80% 학습, 20% 테스트** 비율로 분할
+- KNN 회귀 모델 (`KNeighborsRegressor(n_neighbors=5)`)을 사용
+- 데이터 스케일링을 위해 `StandardScaler()` 적용
 
-### 2. 수학, 영어, 과학 점수로 합격 여부를 예측 (KNN 분류)
+### 2.2 합불 여부 예측 (KNN 분류)
 
-- **입력:** 수학, 영어, 과학 점수
-- **출력:** 합격 여부 (`Pass` 또는 `Fail`)
-- **모델:** KNeighborsClassifier
+- `math`, `eng`, `science` 점수를 입력하면 `pass` 여부 예측
+- 데이터는 **80% 학습, 20% 테스트** 비율로 분할
+- KNN 분류 모델 (`KNeighborsClassifier(n_neighbors=5)`)을 사용
+- 데이터 스케일링을 위해 `StandardScaler()` 적용
 
----
+## 3. 사용법
 
-## 데이터 전처리
+### 3.1 실행 방법
 
-### 1. 결측치 처리
+1. Python이 설치된 환경에서 스크립트를 실행합니다.
+2. 프로그램 실행 시 아래 메뉴가 표시됩니다.
 
-- 각 열의 평균값으로 결측치를 대체합니다.
-  ```python
-  data['math'].fillna(data['math'].mean(), inplace=True)
-  data['eng'].fillna(data['eng'].mean(), inplace=True)
-  data['science'].fillna(data['science'].mean(), inplace=True)
-  ```
+```
+===== 예측 시스템 =====
+1. 수학 점수로 과학 점수 예측
+2. 수학, 과학, 영어 점수로 합불 여부 예측
+3. 종료
+원하는 기능의 번호를 입력하세요:
+```
 
-### 2. 이상치 제거
+3. 원하는 기능의 번호를 입력하면 해당 기능이 실행됩니다.
 
-- IQR(Interquartile Range) 방법을 사용하여 이상치를 제거합니다.
+### 3.2 예측 예시
 
-  ```python
-  Q1 = data[['math', 'eng', 'science']].quantile(0.25)
-  Q3 = data[['math', 'eng', 'science']].quantile(0.75)
-  IQR = Q3 - Q1
+#### (1) 수학 점수를 입력하여 과학 점수 예측
 
-  lower_bound = Q1 - 1.5 * IQR
-  upper_bound = Q3 + 1.5 * IQR
+```
+원하는 기능의 번호를 입력하세요: 1
+예측할 math 점수를 입력하세요: 85
+예측된 science 점수: 87.45
+```
 
-  filtered_data = data[~((data[['math', 'eng', 'science']]  upper_bound)).any(axis=1)]
-  ```
+#### (2) 수학, 영어, 과학 점수를 입력하여 합불 여부 예측
 
-### 요구 사항
+```
+원하는 기능의 번호를 입력하세요: 2
+math 점수를 입력하세요: 90
+eng 점수를 입력하세요: 85
+science 점수를 입력하세요: 88
+예측된 합격 여부: 합격
+```
 
-다음 Python 패키지가 필요합니다:
+### 3.3 프로그램 종료
 
-- pandas
-- numpy
-- scikit-learn
-- matplotlib (옵션: 데이터 시각화를 위해 사용)
+- `3`을 입력하면 프로그램이 종료됩니다.
 
-필요한 패키지를 설치하려면 다음 명령어를 실행하세요:
+```
+원하는 기능의 번호를 입력하세요: 3
+프로그램을 종료합니다.
+```
+
+## 4. 요구 사항
+
+- Python 3.x
+- `pandas`, `numpy`, `scikit-learn`
+
+## 5. 실행 방법
 
 ```bash
-pip install pandas numpy scikit-learn matplotlib
+pip install pandas numpy scikit-learn
+python script.py
 ```
 
-### 실행 방법
+## 6. 파일 설명
 
-1. `Exam-112.csv` 파일을 같은 디렉토리에 저장합니다.
-2. 아래 코드를 실행합니다:
-   ```bash
-   python knn_prediction_service.py
-   ```
-
----
-
-## 코드 구조
-
-### 주요 함수
-
-#### `predict_science(math_score)`
-
-- **설명:** 수학 점수를 입력받아 과학 점수를 예측합니다.
-- **입력:** `math_score` (float)
-- **출력:** 예측된 과학 점수 (float)
-
-#### `predict_pass(math_score, eng_score, science_score)`
-
-- **설명:** 수학, 영어, 과학 점수를 입력받아 합격 여부를 예측합니다.
-- **입력:**
-  - `math_score` (float): 수학 점수
-  - `eng_score` (float): 영어 점수
-  - `science_score` (float): 과학 점수
-- **출력:** 합격 여부 (`Pass` 또는 `Fail`)
-
----
-
-## 테스트 결과
-
-### 테스트 케이스 1: 수학 점수가 75일 때 과학 점수 예측
-
-```python
-predicted_science_score = predict_science(75)
-print(f"예측된 과학 점수: {predicted_science_score:.2f}")
-```
-
-**결과:**
-
-```
-예측된 과학 점수: 72.40
-```
-
-### 테스트 케이스 2: 수학=75, 영어=70, 과학=80일 때 합격 여부 예측
-
-```python
-predicted_status = predict_pass(75, 70, 80)
-print(f"예측된 합격 여부: {predicted_status}")
-```
-
-**결과:**
-
-```
-예측된 합격 여부: Pass
-```
-
----
-
-## 참고 사항
-
-1. **KNN 모델의 하이퍼파라미터 조정**
-
-   - 기본적으로 `n_neighbors=5`로 설정되어 있습니다.
-   - 필요에 따라 값을 변경하여 성능을 최적화할 수 있습니다.
-
-2. **데이터 확장**
-
-   - 현재 데이터는 제한적입니다. 더 많은 데이터를 추가하면 모델 성능이 향상될 수 있습니다.
-
-3. **모델 평가**
-   - 추가적인 평가 지표(MSE, 정확도 등)를 활용하여 모델의 성능을 분석할 수 있습니다.
-
----
-
-## 라이선스
-
-이 프로젝트는 자유롭게 수정 및 배포 가능합니다.
+- `Exam-112.csv`: 원본 데이터 파일 (Python 코드와 동일한 디렉토리에 존재해야 합니다.)
+- `Processed_Exam-112.csv`: 전처리된 데이터 파일 (Python 코드를 실행하면 자동으로 생성 됩니다.)
+- `script.py`: 예측 프로그램 실행 스크립트
